@@ -1,6 +1,7 @@
 import scrapy
 import os
 import datetime
+import re
 
 class PHHCCaseSpider(scrapy.Spider):
     name = "phhc_case_form_dynamic"
@@ -9,7 +10,7 @@ class PHHCCaseSpider(scrapy.Spider):
 
     def date_range_last_two_months(self):
         today = datetime.datetime(2025, 7, 26)  # Use fixed current time for reproducibility
-        two_months_ago = today - datetime.timedelta(days=61)
+        two_months_ago = today - datetime.timedelta(days=2)
         for n in range((today - two_months_ago).days):
             day = two_months_ago + datetime.timedelta(days=n)
             yield day.strftime('%d/%m/%Y')
@@ -66,9 +67,12 @@ class PHHCCaseSpider(scrapy.Spider):
                 # Get text
                 text = cell.css('::text').get(default='').strip()
                 columns[headers[i] if i < len(headers) else f'col_{i}'] = text
-                # Get all links
-                cell_links = cell.css('a::attr(href)').getall()
-                links.extend(response.urljoin(l) for l in cell_links)
+                # Extract only "View Order" links via onclick parsing
+                for a in cell.xpath('.//a[text()="View Order"]'):
+                    onclick = a.attrib.get('OnClick') or a.attrib.get('onclick', '')
+                    m = re.search(r"window\.open\('([^']+)'\)", onclick)
+                    if m:
+                        links.append(response.urljoin(m.group(1)))
             item = PhhcCrawlerItem(
                 case_type=case_type,
                 date=day,
