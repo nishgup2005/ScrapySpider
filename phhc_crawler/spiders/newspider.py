@@ -4,6 +4,13 @@ import datetime
 import re
 
 class PHHCCaseSpider(scrapy.Spider):
+    custom_settings = {
+        'LOG_ENABLED': True,
+        'LOG_LEVEL': 'INFO',
+        'LOG_FILE': 'crawl.log',
+        'LOG_STDOUT': True,
+    }
+
     name = "phhc_case_form_dynamic"
     allowed_domains = ["phhc.gov.in"]
     start_url = "https://www.phhc.gov.in/home.php?search_param=free_text_search_judgment"
@@ -61,7 +68,6 @@ class PHHCCaseSpider(scrapy.Spider):
 
         if not rows:
             return
-
         for row in rows:
             cells = row.css('td')
             columns = {}
