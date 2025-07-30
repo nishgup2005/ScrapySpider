@@ -9,8 +9,8 @@ class PHHCCaseSpider(scrapy.Spider):
     start_url = "https://www.phhc.gov.in/home.php?search_param=free_text_search_judgment"
 
     def date_range_last_two_months(self):
-        today = datetime.datetime(2025, 7, 26)  # Use fixed current time for reproducibility
-        two_months_ago = today - datetime.timedelta(days=2)
+        today = datetime.datetime.today()  # Use fixed current time for reproducibility
+        two_months_ago = today - datetime.timedelta(days=61)
         for n in range((today - two_months_ago).days):
             day = two_months_ago + datetime.timedelta(days=n)
             yield day.strftime('%d/%m/%Y')
@@ -59,6 +59,9 @@ class PHHCCaseSpider(scrapy.Spider):
         headers = table.css('tr th::text').getall()
         rows = table.css('tr')[1:]  # skip header row
 
+        if not rows:
+            return
+
         for row in rows:
             cells = row.css('td')
             columns = {}
@@ -73,6 +76,8 @@ class PHHCCaseSpider(scrapy.Spider):
                     m = re.search(r"window\.open\('([^']+)'\)", onclick)
                     if m:
                         links.append(response.urljoin(m.group(1)))
+            if not links:
+                continue
             item = PhhcCrawlerItem(
                 case_type=case_type,
                 date=day,
